@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import {server_url} from "./src/utils/connection.js";
 
 export default defineConfig({
   plugins: [
@@ -14,7 +15,7 @@ export default defineConfig({
     },
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: server_url,
         changeOrigin: true,
         ws: true,
       },

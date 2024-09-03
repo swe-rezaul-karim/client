@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import PostBox from "../../components/PostBox/PostBox"
 import TypePost from "../../components/TypePost/TypePost"
 import { AuthContext } from "../../providers/AuthProvider";
+import {server_url} from "../../utils/connection.js";
 
 const Forum = () => {
   const [posts, setPosts] = useState([]);
@@ -10,7 +11,7 @@ const Forum = () => {
 
   useEffect(() => {
     if(user){
-    fetch("http://localhost:5000/users")
+    fetch(`${server_url}/users`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
@@ -29,7 +30,7 @@ const Forum = () => {
   }, [user]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/posts")
+    fetch(`${server_url}/posts`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);

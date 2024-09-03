@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {server_url} from "../../utils/connection.js";
 
 const PopularTasks = () => {
   const [services, setServices] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/services")
+    fetch(`${server_url}/services`)
       .then((res) => res.json())
       .then((data) => {
         setServices(data);

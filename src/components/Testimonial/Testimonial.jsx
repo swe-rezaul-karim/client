@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import {server_url} from "../../utils/connection.js";
 
 const Testimonial = () => {
   const [testimonial, setTestimonial] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/testimonials")
+    fetch(`${server_url}/testimonials`)
       .then((res) => res.json())
       .then((data) => {
         setTestimonial(data);

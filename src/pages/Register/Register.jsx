@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { AuthContext } from "../../providers/AuthProvider";
+import {server_url} from "../../utils/connection.js";
 
 const Register = () => {
   const [error, setError] = useState("");
@@ -12,7 +13,7 @@ const Register = () => {
 
   //fetch category
   useEffect(() => {
-    fetch("http://localhost:5000/services")
+    fetch(`${server_url}/services`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
@@ -41,7 +42,7 @@ const Register = () => {
     }
 
     //send data to server
-    fetch("http://localhost:5000/users", {
+    fetch(`${server_url}/users`, {
       method: "POST",
       body: form,
     })

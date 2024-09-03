@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom";
 import SocketContext from "../../SocketContext";
 import Peer from "simple-peer";
 import testVide from "./videoplayback.mp4"
+import {server_url} from "../../utils/connection.js";
 
 const Messenger = ({ socket }) => {
   const [userData, setUserData] = useState([]);
@@ -74,7 +75,7 @@ const Messenger = ({ socket }) => {
 
   useEffect(() => {
     if (user && user?.email) {
-      fetch("http://localhost:5000/users")
+      fetch(`${server_url}/users`)
         .then((res) => res.json())
         .then((data) => {
           const matchedUser = data.find((uData) => uData.email === user.email);
@@ -96,7 +97,7 @@ const Messenger = ({ socket }) => {
   }, [user]);
 
   const fetchSenders = (receiver) => {
-    fetch(`http://localhost:5000/messages/senders/${receiver}`)
+    fetch(`${server_url}/messages/senders/${receiver}`)
       .then((res) => res.json())
       .then((data) => {
         setSenders((prevSenders) => {
@@ -115,7 +116,7 @@ const Messenger = ({ socket }) => {
   };
 
   const fetchMessages = (sender, receiver) => {
-    fetch(`http://localhost:5000/messages/${sender}/${receiver}`)
+    fetch(`${server_url}/messages/${sender}/${receiver}`)
       .then((res) => res.json())
       .then((data) => setMessages(data))
       .catch((error) => console.error("Error fetching messages:", error));
@@ -151,7 +152,7 @@ const Messenger = ({ socket }) => {
 
       setMessages((prevMessages) => [...prevMessages, newMessage]);
 
-      fetch("http://localhost:5000/messages", {
+      fetch(`${server_url}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

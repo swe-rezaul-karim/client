@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import {server_url} from "../../utils/connection.js";
 
 const IdentityCheck = () => {
     const [users,setUsers ] = useState([]);
 
 
   useEffect(() => {
-    fetch("http://localhost:5000/users")
+    fetch(`${server_url}/users`)
       .then((res) => res.json())
       .then((data) => {
         // console.log(data);
@@ -21,7 +22,7 @@ const IdentityCheck = () => {
       });
   }, []);
   const verifyUser = (userId) => {
-    fetch(`http://localhost:5000/users/${userId}`,
+    fetch(`${server_url}/users/${userId}`,
       {
         method: "PATCH",
         headers: {
@@ -65,7 +66,7 @@ const IdentityCheck = () => {
                     user.identity && (
                         <p>
                             Identity File 
-                            <a href={`http://localhost:5000/${user.identity}`}
+                            <a href={`${server_url}/${user.identity}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-500 underline"

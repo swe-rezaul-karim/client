@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import ProfileCard from "../ProfileCard/ProfileCard";
 import SubNav from "../SubNav/SubNav";
+import {server_url} from "../../utils/connection.js";
 
 const UserProfile = () => {
   const { providerEmail } = useParams();
   const [providerData, setProviderData] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/users?email=${providerEmail}`)
+    fetch(`${server_url}/users?email=${providerEmail}`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);

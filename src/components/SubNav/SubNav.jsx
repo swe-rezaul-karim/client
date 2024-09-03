@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider"
+import {server_url} from "../../utils/connection.js";
 
 const SubNav = () => {
   const [userData, setUserData] = useState([]);
@@ -8,7 +9,7 @@ const SubNav = () => {
 
   useEffect(() => {
     if(user && user?.email){
-      fetch("http://localhost:5000/users")
+      fetch(`${server_url}/users`)
     .then((res) => res.json())
     .then((data) =>{
       console.log(data);

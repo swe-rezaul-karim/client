@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaPaperPlane } from "react-icons/fa";
+import {server_url} from "../../utils/connection.js";
 
 const Chatbot = ({ onClose }) => {
   const [messages, setMessages] = useState([]);
@@ -21,7 +22,7 @@ const Chatbot = ({ onClose }) => {
     setMessages([...messages, newMessage]);
 
     try {
-      const response = await fetch("http://localhost:5000/webhook", {
+      const response = await fetch(`${server_url}/webhook`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

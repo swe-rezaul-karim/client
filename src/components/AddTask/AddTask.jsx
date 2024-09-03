@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Swal from "sweetalert2";
+import {server_url} from "../../utils/connection.js";
 
 const AddTask = () => {
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ const AddTask = () => {
     const newService = { serviceName, providerName, providerEmail, providerPhoto, category, description, photo, price, availability };
 
     //send data to server
-    fetch("http://localhost:5000/tasks", {
+    fetch(`${server_url}/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -5,6 +5,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Swal from "sweetalert2";
 import Review from "../../components/Review/Review";
+import {server_url} from "../../utils/connection.js";
 
 const ServiceDetails = () => {
   const [tasks, setTasks] = useState([]);
@@ -18,7 +19,7 @@ const ServiceDetails = () => {
   const { id } = useParams();
 
   useEffect(() => {
-    fetch(`http://localhost:5000/services/${id}`)
+    fetch(`${server_url}/services/${id}`)
       .then((res) => res.json())
       .then((data) => setService(data))
       .catch((error) => console.error("Error fetching data:", error));
@@ -26,7 +27,7 @@ const ServiceDetails = () => {
 
 
   useEffect(() => {
-    fetch("http://localhost:5000/tasks")
+    fetch(`${server_url}/tasks`)
       .then((res) => res.json())
       .then((data) => {
         const matchedTask = data.filter((task) => task.serviceName === service.serviceName);
@@ -39,7 +40,7 @@ const ServiceDetails = () => {
   }, [id, service.serviceName]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/bookings")
+    fetch(`${server_url}/bookings`)
       .then((res) => res.json())
       .then((data) => {
         const bookings = data.filter(
@@ -78,7 +79,7 @@ const ServiceDetails = () => {
       booked: true,
     };
 
-    fetch(`http://localhost:5000/bookings`, {
+    fetch(`${server_url}/bookings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

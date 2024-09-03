@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { BsThreeDots } from "react-icons/bs";
 import Swal from "sweetalert2";
+import {server_url} from "../../utils/connection.js";
 
 const PostBox = ({ posts, userData, setPosts }) => {
   const [comments, setComments] = useState({});
@@ -23,7 +24,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
 
     try {
       await axios.post(
-        `http://localhost:5000/posts/${postId}/comments`,
+        `${server_url}/posts/${postId}/comments`,
         newComment
       );
       setComments({ ...comments, [postId]: "" });
@@ -34,7 +35,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
   };
 
   const fetchPosts = () => {
-    fetch("http://localhost:5000/posts")
+    fetch(`${server_url}/posts`)
       .then((res) => res.json())
       .then((data) => {
         setPosts(data);
@@ -46,7 +47,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
 
   const handleLike = async (postId) => {
     try {
-      await axios.post(`http://localhost:5000/posts/${postId}/likes`, {
+      await axios.post(`${server_url}/posts/${postId}/likes`, {
         userId: userData._id,
       });
       fetchPosts();
@@ -66,7 +67,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`http://localhost:5000/posts/${postId}`);
+          await axios.delete(`${server_url}/posts/${postId}`);
 
           setPosts(posts.filter((post) => post._id !== postId));
 
@@ -87,7 +88,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
   const handleSaveEdit = async (postId) => {
     console.log("Attempting to update post with ID:", postId);
     try {
-      const response = await axios.put(`http://localhost:5000/posts/${postId}`, {
+      const response = await axios.put(`${server_url}/posts/${postId}`, {
         content: editedContent,
       });
   
@@ -124,7 +125,7 @@ const PostBox = ({ posts, userData, setPosts }) => {
       return null;
     }
     const formattedPath = relativePath.replace(/\\/g, "/");
-    return `http://localhost:5000/${formattedPath}`;
+    return `${server_url}/${formattedPath}`;
   };
 
   const toggleCommentExpansion = (postId) => {

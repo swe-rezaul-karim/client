@@ -1,11 +1,12 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
+import {server_url} from "../../utils/connection.js";
 
 const ProfileCard = () => {
   const [userData,setUserData] =useState([]);
   const {user} = useContext(AuthContext);
   useEffect(() => {
-      fetch("http://localhost:5000/users")
+      fetch(`${server_url}/users`)
     .then((res) => res.json())
     .then((data) =>{
       console.log(data);

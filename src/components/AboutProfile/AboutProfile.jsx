@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
 import { FaEdit } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { server_url } from "../../utils/connection.js";
 
 const AboutProfile = () => {
   const [userData, setUserData] = useState([]);
@@ -10,7 +11,7 @@ const AboutProfile = () => {
 
   useEffect(() => {
     if (user && user.email) {
-      fetch("http://localhost:5000/users")
+      fetch(`${server_url}/users`)
         .then((res) => res.json())
         .then((data) => {
           const matchedUser = data.find(
@@ -37,7 +38,7 @@ const AboutProfile = () => {
       phone: formData.get("phone"),
     };
 
-    fetch(`http://localhost:5000/users/${userData._id}`, {
+    fetch(`${server_url}/users/${userData._id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

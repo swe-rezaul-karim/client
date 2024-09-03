@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from 'axios';
+import {server_url} from "../../utils/connection.js";
 
 const TypePost = ({ userData, addPost }) => {
     const [content, setContent] = useState('');
@@ -27,7 +28,7 @@ const TypePost = ({ userData, addPost }) => {
         formData.append('role', userData.role);
 
         try {
-            const res = await axios.post("http://localhost:5000/posts", formData, {
+            const res = await axios.post(`${server_url}/posts`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

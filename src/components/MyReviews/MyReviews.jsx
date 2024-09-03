@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
+import {server_url} from "../../utils/connection.js";
 
 const MyReviews = () => {
   const [reviews, setReviews] = useState([]);
@@ -7,7 +8,7 @@ const MyReviews = () => {
   const { email } = user || {};
 
   useEffect(() => {
-    fetch("http://localhost:5000/reviews")
+    fetch(`${server_url}/reviews`)
       .then((res) => res.json())
       .then((data) => {
         const matchedReview = data.filter((review) => review.providerEmail === email);

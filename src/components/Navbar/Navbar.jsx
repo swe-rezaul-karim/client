@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { Link, NavLink, useNavigate } from "react-router-dom"
 import { AuthContext } from "../../providers/AuthProvider"
 import Swal from "sweetalert2";
+import {server_url} from "../../utils/connection.js";
 
 
 const Navbar = () => {
@@ -12,7 +13,7 @@ const Navbar = () => {
 
   useEffect(() => {
     if(user && user?.email){
-      fetch("http://localhost:5000/users")
+      fetch(`${server_url}/users`)
     .then((res) => res.json())
     .then((data) =>{
       // console.log(data);

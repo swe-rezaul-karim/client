@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { AuthContext } from "../../providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import {server_url} from "../../utils/connection.js";
 
 const Review = ({
   serviceName,
@@ -21,7 +22,7 @@ const Review = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:5000/users")
+    fetch(`${server_url}/users`)
       .then((res) => res.json())
       .then((data) => {
         setBookedUser(data);
@@ -33,7 +34,7 @@ const Review = ({
   }, [user]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/reviews/${serviceId}`)
+    fetch(`${server_url}/reviews/${serviceId}`)
       .then((res) => res.json())
       .then((data) => {
         const reviews = data.filter(
@@ -80,7 +81,7 @@ const Review = ({
       createdDate: new Date().toISOString(),
     };
 
-    fetch("http://localhost:5000/reviews", {
+    fetch(`${server_url}/reviews`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

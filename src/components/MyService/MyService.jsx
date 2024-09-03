@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
+import {server_url} from "../../utils/connection.js";
 
 const MyService = () => {
   const [services, setServices] = useState([]);
@@ -7,7 +8,7 @@ const MyService = () => {
   const { email } = user || {};
 
   useEffect(() => {
-    fetch("http://localhost:5000/tasks")
+    fetch(`${server_url}/tasks`)
       .then((res) => res.json())
       .then((data) => {
         const matchedService = data.filter(

@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
 import { format } from 'date-fns';
+import {server_url} from "../../utils/connection.js";
 
 const BookedTask = () => {
   const [bookedTask, setBookedTask] = useState([]);
@@ -8,7 +9,7 @@ const BookedTask = () => {
   const { email } = user || {};
 
   useEffect(() => {
-    fetch("http://localhost:5000/bookings")
+    fetch(`${server_url}/bookings`)
       .then((res) => res.json())
       .then((data) => {
         const matchedBookedTask = data.filter((task) => task.providerEmail === email);

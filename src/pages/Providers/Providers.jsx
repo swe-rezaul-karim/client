@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
+import {server_url} from "../../utils/connection.js";
 
 const Providers = () => {
   const [providers, setProviders] = useState([]);
@@ -8,7 +9,7 @@ const Providers = () => {
 
   useEffect(() => {
     // Fetching the provider data from the API
-    fetch("http://localhost:5000/tasks")
+    fetch(`${server_url}/tasks`)
       .then((res) => res.json())
       .then((data) => {
         setProviders(data);

@@ -7,7 +7,8 @@ import router from './routes/routes.jsx'
 import AuthProvider from './providers/AuthProvider.jsx'
 import SocketContext from './SocketContext.js'
 import { io } from "socket.io-client";
-const socket = io('http://localhost:5000',
+import {server_url} from "./utils/connection.js";
+const socket = io(server_url,
   {
     transports: ['websocket', 'polling'],
     withCredentials: true,
@@ -16,9 +17,9 @@ const socket = io('http://localhost:5000',
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
    <SocketContext.Provider value={socket}>
-   <AuthProvider>
-    <RouterProvider router={router}/>
-    </AuthProvider>
+       <AuthProvider>
+        <RouterProvider router={router}/>
+       </AuthProvider>
    </SocketContext.Provider>
   </React.StrictMode>,
 )

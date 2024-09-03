@@ -13,6 +13,7 @@ import {
 import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
 import SocketContext from "../../SocketContext";
+import {server_url} from "../../utils/connection.js";
 
 
 const Messenger = ({socket}) => {
@@ -79,7 +80,7 @@ const Messenger = ({socket}) => {
 
   const fetchSenders = (receiver) => {
     fetch(
-      `http://localhost:5000/messages/senders/${receiver}`
+      `${server_url}/messages/senders/${receiver}`
     )
       .then((res) => res.json())
       .then((data) => setSenders(data))
@@ -88,7 +89,7 @@ const Messenger = ({socket}) => {
 
   const fetchMessages = (sender, receiver) => {
     fetch(
-      `http://localhost:5000/messages/${sender}/${receiver}`
+      `${server_url}/messages/${sender}/${receiver}`
     )
       .then((res) => res.json())
       .then((data) => setMessages(data))
@@ -107,7 +108,7 @@ const Messenger = ({socket}) => {
       setMessages((prevMessages) => [...prevMessages, newMessage]);
       // Save message to the database
       fetch(
-        "http://localhost:5000/messages",
+        `${server_url}/messages`,
         {
           method: "POST",
           headers: {
