@@ -1,20 +1,20 @@
 import { useState, useEffect, useContext, useRef } from "react";
 import { AuthContext } from "../../providers/AuthProvider";
-import {
-  FaVideo,
-  FaSync,
-  FaTimes,
-  FaCheck,
-  FaMicrophone,
-  FaMicrophoneSlash,
-} from "react-icons/fa";
+import { FaVideo, FaSync, FaTimes, FaCheck } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
 import SocketContext from "../../SocketContext";
 import Peer from "simple-peer";
-import testVide from "./videoplayback.mp4"
-import {server_url} from "../../utils/connection.js";
-
+import { server_url } from "../../utils/connection.js";
+import CallTimes from "./CallTimes.jsx";
+const initialCallData = {
+  from: "",
+  to: "",
+  name: "",
+  picture: "",
+  signal: "",
+  receivingCall: false
+}
 const Messenger = ({ socket }) => {
   const [userData, setUserData] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -23,13 +23,12 @@ const Messenger = ({ socket }) => {
   const [callingInfo, setCallingInfo] = useState(null);
   const [selectedSender, setSelectedSender] = useState(null);
   const [localStream, setLocalStream] = useState(null);
-  const [remoteStream, setRemoteStream] = useState(null);
   const [peerConnection, setPeerConnection] = useState(null);
   const [videoCallActive, setVideoCallActive] = useState(false);
   const [usingFrontCamera, setUsingFrontCamera] = useState(true);
-  const [incomingCall, setIncomingCall] = useState(null);
-  const [muted, setMuted] = useState(false);
-  const [callAccepted, setCallAccepted] = useState(false); // <-- Added state
+  const [incomingCall, setIncomingCall] = useState(initialCallData);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [callReceived, setCallReceived] = useState(false);
   const { user } = useContext(AuthContext);
   const messagesEndRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -58,18 +57,6 @@ const Messenger = ({ socket }) => {
       socket.on("get-online-users", (users) => {
         setOnlineUsers(users);
       });
-
-      // Listen for incoming call
-      socket.on("incoming-call", handleIncomingCall);
-      socket.on("answer", handleAnswer);
-      socket.on("ice-candidate", handleIceCandidate);
-
-      // Cleanup listeners on unmount
-      return () => {
-        socket.off("incoming-call", handleIncomingCall);
-        socket.off("answer", handleAnswer);
-        socket.off("ice-candidate", handleIceCandidate);
-      };
     }
   }, [user, selectedSender]); // Again, peerConnection removed from dependencies
 
@@ -171,14 +158,22 @@ const Messenger = ({ socket }) => {
   };
 
   useEffect(() => {
-    socket.on("callUser", (data) => {
+    socket.on("callUser", async (data) => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      setLocalStream(stream);
+
       setIncomingCall({
-        email: data.email,
         from: data.from,
         name: data.name,
         picture: data.picture,
         signal: data.signal,
-        to: data.to,
+        receivingCall: true
       });
     });
   }, [userData]);
@@ -187,10 +182,8 @@ const Messenger = ({ socket }) => {
     if (callingInfo) {
       socket.on("callDeclined", () => {
         setVideoCallActive(false);
-        setCallAccepted(false); 
         setCallingInfo(null);
-        setIncomingCall(null);
-  
+
         if (localStream) {
           localStream.getTracks().forEach((track) => track.stop());
         }
@@ -199,7 +192,7 @@ const Messenger = ({ socket }) => {
         }
         setLocalStream(null);
         setPeerConnection(null);
-  
+
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = null;
         }
@@ -208,17 +201,59 @@ const Messenger = ({ socket }) => {
         }
         Swal.fire("Call Ended");
       });
+
+      socket.on("callEnded", () => {
+        setVideoCallActive(false);
+        setCallReceived(false);
+        setCallingInfo(null);
+
+        if (localStream) {
+          localStream.getTracks().forEach((track) => track.stop());
+        }
+
+        setLocalStream(null);
+
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null;
+        }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null;
+        }
+        if (connectionRef.current) {
+          connectionRef.current.destroy();
+        }
+      });
     }
   }, [callingInfo]);
 
   useEffect(() => {
-    if (incomingCall) {
+    if (incomingCall.receivingCall) {
       socket.on("callDeclined", () => {
-        setIncomingCall(null);
+        setIncomingCall(initialCallData);
         setCallingInfo(null);
       });
+      socket.on("callEnded", () => {
+        setCallAccepted(false); // Reset callAccepted state
+
+        if (localStream) {
+          localStream.getTracks().forEach((track) => track.stop());
+        }
+
+        setLocalStream(null);
+
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null;
+        }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null;
+        }
+        setIncomingCall(initialCallData);
+        if (connectionRef.current) {
+          connectionRef.current.destroy();
+        }
+      });
     }
-  }, [incomingCall]);
+  }, [incomingCall.receivingCall]);
 
   const startVideoCall = async () => {
     try {
@@ -246,11 +281,10 @@ const Messenger = ({ socket }) => {
         );
         peer.on("signal", (data) => {
           let info = {
+            userToCall: currentUser.socketId,
             signal: data,
-            from: currentUser.socketId,
             name: userData.name,
             picture: userData.photo,
-            email: userData.email,
           };
           setCallingInfo(info);
           socket.emit("callUser", info);
@@ -260,8 +294,9 @@ const Messenger = ({ socket }) => {
         });
 
         socket.on("callAccepted", (signal) => {
+          setCallReceived(true);
           peer.signal(signal);
-        })
+        });
         connectionRef.current = peer;
       } else {
         alert("Please select a user");
@@ -272,119 +307,33 @@ const Messenger = ({ socket }) => {
     }
   };
 
-  const initiatePeerConnection = async (stream) => {
-    const pc = createPeerConnection();
-    setPeerConnection(pc);
-
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    socket.emit("offer", {
-      offer,
-      receiver: selectedSender.email,
-      sender: user.email,
-    });
-  };
-
-  const createPeerConnection = () => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-      ],
-    });
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", {
-          candidate: event.candidate,
-          receiver: selectedSender.email,
-          sender: user.email,
-        });
-      }
-    };
-
-    pc.ontrack = (event) => {
-      const remoteStream = event.streams[0];
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream;
-      }
-    };
-
-    return pc;
-  };
-
-  const handleIncomingCall = async (data) => {
-    setIncomingCall(data);
-    Swal.fire({
-      title: "Incoming Video Call",
-      text: `Call from ${data.sender}`,
-      showCancelButton: true,
-      confirmButtonText: "Accept",
-      cancelButtonText: "Decline",
-      reverseButtons: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        acceptCall();
-        setCallAccepted(true);
-      } else {
-        declineCall();
-      }
-    });
-  };
-
   const acceptCall = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: usingFrontCamera ? "user" : "environment" },
-      audio: true,
-    });
-    setLocalStream(stream);
-    setVideoCallActive(true);
-
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.srcObject = localStream;
     }
-
 
     const peer = new Peer({
       initiator: false,
       trickle: false,
-      stream: stream
+      stream: localStream,
     });
 
     peer.on("signal", (data) => {
-      socket.emit("callAccepted", { signal: data, to: incomingCall.to });
-      sis = true;
+      socket.emit("answerCall", { signal: data, to: incomingCall.from });
     });
 
     peer.on("stream", (stream) => {
       remoteVideoRef.current.srcObject = stream;
     });
     // remoteVideoRef.current.srcObject = testVide;
-    peer.signal(incomingCall.signal)
-    connectionRef.current = peer
+    peer.signal(incomingCall.signal);
+    connectionRef.current = peer;
     // setIncomingCall(null);
   };
 
   const declineCall = () => {
-    socket.emit("callDeclined", incomingCall.to);
-    setIncomingCall(null);
-  };
-
-  const handleAnswer = async (data) => {
-    if (peerConnection) {
-      await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(data.answer)
-      );
-    }
-  };
-
-  const handleIceCandidate = (data) => {
-    if (peerConnection) {
-      peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
+    socket.emit("callDeclined", incomingCall.from);
+    setIncomingCall(initialCallData);
   };
 
   const switchCamera = async () => {
@@ -410,16 +359,8 @@ const Messenger = ({ socket }) => {
     setUsingFrontCamera(!usingFrontCamera);
   };
 
-  const toggleMute = () => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      setMuted(!audioTrack.enabled);
-    }
-  };
-
   const endCall = () => {
-    if (!callAccepted && callingInfo) {
+    if (!callReceived && callingInfo) {
       setVideoCallActive(false);
       setCallAccepted(false); // Reset callAccepted state
 
@@ -438,7 +379,48 @@ const Messenger = ({ socket }) => {
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
       }
-      socket.emit("callDeclined", callingInfo.from);
+      socket.emit("callDeclined", callingInfo.userToCall);
+      if (connectionRef.current) {
+        connectionRef.current.destroy();
+      }
+    } else if (callReceived && callingInfo) {
+      setVideoCallActive(false);
+      setCallReceived(false);
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+
+      setLocalStream(null);
+
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
+      socket.emit("callEnded", callingInfo.userToCall);
+      if (connectionRef.current) {
+        connectionRef.current.destroy();
+      }
+    } else if (callAccepted && incomingCall) {
+      setCallAccepted(false);
+      setIncomingCall(initialCallData)
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+
+      setLocalStream(null);
+
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = null;
+      }
+      socket.emit("callEnded", incomingCall.from);
+      if (connectionRef.current) {
+        connectionRef.current.destroy();
+      }
     }
   };
 
@@ -620,7 +602,11 @@ const Messenger = ({ socket }) => {
               <h2 className="text-xl font-semibold text-white">
                 {selectedSender?.name || "Caller Name"}
               </h2>
-              <p className="text-gray-400">Ringing...</p>
+              {!callReceived ? (
+                <p className="text-gray-400">Ringing...</p>
+              ) : (
+                <CallTimes />
+              )}
             </div>
 
             {/* Remote Video */}
@@ -645,22 +631,6 @@ const Messenger = ({ socket }) => {
 
             {/* Control Buttons */}
             <div className="flex justify-center space-x-4 mt-4">
-              <button
-                onClick={toggleMute}
-                className="w-12 h-12 bg-gray-700 text-white rounded-full flex justify-center items-center"
-              >
-                {muted ? (
-                  <FaMicrophoneSlash className="h-6 w-6" />
-                ) : (
-                  <FaMicrophone className="h-6 w-6" />
-                )}
-              </button>
-              <button
-                onClick={switchCamera}
-                className="w-12 h-12 bg-gray-700 text-white rounded-full flex justify-center items-center"
-              >
-                <FaSync className="h-6 w-6" />
-              </button>
               <button
                 onClick={endCall}
                 className="w-12 h-12 bg-red-600 text-white rounded-full flex justify-center items-center"
@@ -673,73 +643,36 @@ const Messenger = ({ socket }) => {
       )}
 
       {/* Incoming Call Screen */}
-      {incomingCall && !callAccepted && (
+      {incomingCall.receivingCall ? (
         <div className="fixed inset-0 bg-gray-900 flex items-center justify-center">
           <div className="bg-gray-800 rounded-lg shadow-lg p-4 w-full max-w-3xl h-3/4 flex flex-col items-center justify-between">
             {/* Caller Information */}
             <div className="flex flex-col items-center mb-4">
               <img
                 className="w-16 h-16 rounded-full mb-2"
-                src={incomingCall.picture || "default-caller.png"}
-                alt={incomingCall.name || "Caller"}
+                src={incomingCall.picture}
+                alt={incomingCall.name}
               />
               <h2 className="text-xl font-semibold text-white">
-                {incomingCall.name || "Caller Name"}
+                {incomingCall.name}
               </h2>
-              <p className="text-gray-400">Incoming Call...</p>
+              {!callAccepted ? (
+                <p className="text-gray-400">Incoming Call...</p>
+              ) : (
+                <CallTimes />
+              )}
             </div>
 
             {/* Placeholder for Video or Animation */}
-            <div className="flex-1 flex items-center justify-center relative w-full h-full rounded-md overflow-hidden bg-gray-700">
-              {/* Optionally, add a placeholder or animation here */}
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex justify-center space-x-4 mt-4">
-              <button
-                onClick={() => {
-                  acceptCall();
-                  setCallAccepted(true);
-                }}
-                className="w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition"
-              >
-                <FaCheck className="h-6 w-6 mx-auto" />
-              </button>
-              <button
-                onClick={declineCall}
-                className="w-16 h-16 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition"
-              >
-                <FaTimes className="h-6 w-6 mx-auto" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Active Call Screen */}
-      {callAccepted && (
-        <div className="fixed inset-0 bg-gray-900 flex items-center justify-center">
-          <div className="bg-gray-800 rounded-lg shadow-lg p-4 w-full max-w-3xl h-3/4 flex flex-col items-center justify-between">
-            {/* Caller Information */}
-            <div className="flex flex-col items-center mb-4">
-              <img
-                className="w-16 h-16 rounded-full mb-2"
-                src={incomingCall?.picture}
-                alt={incomingCall?.name}
-              />
-              <h2 className="text-xl font-semibold text-white">
-                {incomingCall?.name}
-              </h2>
-            </div>
-
-            {/* Remote Video */}
             <div className="flex-1 flex items-center justify-center relative w-full h-full rounded-md overflow-hidden">
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+              {callAccepted ? (
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : null}
 
               {/* Local Video */}
               <div className="absolute bottom-1/4 flex justify-center items-center">
@@ -753,41 +686,45 @@ const Messenger = ({ socket }) => {
             </div>
 
             {/* Control Buttons */}
-            <div className="flex justify-center space-x-4 mt-4">
-              <button
-                onClick={toggleMute}
-                className="w-12 h-12 bg-gray-700 text-white rounded-full flex justify-center items-center"
-              >
-                {muted ? (
-                  <FaMicrophoneSlash className="h-6 w-6" />
-                ) : (
-                  <FaMicrophone className="h-6 w-6" />
-                )}
-              </button>
-              <button
-                onClick={switchCamera}
-                className="w-12 h-12 bg-gray-700 text-white rounded-full flex justify-center items-center"
-              >
-                <FaSync className="h-6 w-6" />
-              </button>
-              <button
-                onClick={endCall}
-                className="w-12 h-12 bg-red-600 text-white rounded-full flex justify-center items-center"
-              >
-                <FaTimes className="h-6 w-6" />
-              </button>
-            </div>
+            {!callAccepted ? (
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={() => {
+                    acceptCall();
+                    setCallAccepted(true);
+                  }}
+                  className="w-16 h-16 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition"
+                >
+                  <FaCheck className="h-6 w-6 mx-auto" />
+                </button>
+                <button
+                  onClick={declineCall}
+                  className="w-16 h-16 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition"
+                >
+                  <FaTimes className="h-6 w-6 mx-auto" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={endCall}
+                  className="w-12 h-12 bg-red-600 text-white rounded-full flex justify-center items-center"
+                >
+                  <FaTimes className="h-6 w-6" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
 
 const MessengerWithContext = (props) => (
-  <SocketContext>
+  <SocketContext.Consumer>
     {(socket) => <Messenger {...props} socket={socket} />}
-  </SocketContext>
+  </SocketContext.Consumer>
 );
 
 export default MessengerWithContext;

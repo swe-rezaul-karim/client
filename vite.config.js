@@ -25,14 +25,14 @@ export default defineConfig({
     'process.env.NODE_ENV': '"development"',
     global: 'window'
   },
-  build: {
-    rollupOptions: {
-      external: ['crypto']
-    }
-  },
-  resolve: {
-    alias: {
-      src: "/src"
-    }
-  }
+  // build: {
+  //   rollupOptions: {
+  //     external: ['crypto']
+  //   }
+  // },
+  // resolve: {
+  //   alias: {
+  //     src: "/src"
+  //   }
+  // }
 });

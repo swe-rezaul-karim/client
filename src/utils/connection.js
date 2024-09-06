@@ -1,1 +1,1 @@
-export const server_url = "https://server-b2gn.onrender.com"
+export const server_url = "http://localhost:5000"
